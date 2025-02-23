@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { MapPin, Trash, Coins, Medal, Settings, Home, Car } from "lucide-react"
+import { MapPin, Trash, Coins, Medal, Settings, Home, ShoppingCart } from "lucide-react"
 
 const sidebarItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -9,6 +9,7 @@ const sidebarItems = [
   { href: "/collect", icon: Trash, label: "Collect Waste" },
   { href: "/rewards", icon: Coins, label: "Rewards" },
   { href: "/leaderboard", icon: Medal, label: "Leaderboard" },
+  { href: "https://com-v8x8.vercel.app/", icon: ShoppingCart, label: "My Shop" }, // New item for My Shop
 ]
 
 interface SidebarProps {
@@ -31,6 +32,11 @@ export default function Sidebar({ open }: SidebarProps) {
                     ? "bg-green-100 text-green-800"
                     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }`}
+                onClick={() => {
+                  if (item.href === "https://www.google.com") {
+                    window.location.href = item.href;
+                  }
+                }}
               >
                 <item.icon className="mr-3 h-6 w-6 transition-transform duration-300" />
                 <span className="text-base transition-transform duration-300 ease-in-out transform hover:scale-110">

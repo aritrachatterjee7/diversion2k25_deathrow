@@ -78,7 +78,7 @@ export default function RewardsPage() {
 
         // Update database
         await redeemReward(user.id, rewardId);
-        
+
         // Create a new transaction record
         await createTransaction(user.id, 'redeemed', reward.cost, `Redeemed ${reward.name}`);
 
@@ -105,7 +105,7 @@ export default function RewardsPage() {
       try {
         // Update database
         await redeemReward(user.id, 0);
-        
+
         // Create a new transaction record
         await createTransaction(user.id, 'redeemed', balance, 'Redeemed all points');
 
@@ -113,6 +113,9 @@ export default function RewardsPage() {
         await refreshUserData();
 
         toast.success(`You have successfully redeemed all your points!`);
+
+        // Redirect to Google
+        window.location.href = "https://prize-lake.vercel.app/";
       } catch (error) {
         console.error('Error redeeming all points:', error);
         toast.error('Failed to redeem all points. Please try again.');
@@ -130,7 +133,7 @@ export default function RewardsPage() {
         setTransactions(fetchedTransactions as Transaction[]);
         const fetchedRewards = await getAvailableRewards(fetchedUser.id);
         setRewards(fetchedRewards.filter(r => r.cost > 0)); // Filter out rewards with 0 points
-        
+
         // Recalculate balance
         const calculatedBalance = fetchedTransactions.reduce((acc, transaction) => {
           return transaction.type.startsWith('earned') ? acc + transaction.amount : acc - transaction.amount
@@ -149,7 +152,7 @@ export default function RewardsPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-semibold mb-6 text-gray-800">Rewards</h1>
-      
+
       <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col justify-between h-full border-l-4 border-green-500 mb-8">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Reward Balance</h2>
         <div className="flex items-center justify-between mt-auto">
@@ -208,7 +211,7 @@ export default function RewardsPage() {
                   <p className="text-sm text-gray-500 mb-4">{reward.collectionInfo}</p>
                   {reward.id === 0 ? (
                     <div className="space-y-2">
-                      <Button 
+                      <Button
                         onClick={handleRedeemAllPoints}
                         className="w-full bg-green-500 hover:bg-green-600 text-white"
                         disabled={balance === 0}
@@ -218,7 +221,7 @@ export default function RewardsPage() {
                       </Button>
                     </div>
                   ) : (
-                    <Button 
+                    <Button
                       onClick={() => handleRedeemReward(reward.id)}
                       className="w-full bg-green-500 hover:bg-green-600 text-white"
                       disabled={balance < reward.cost}

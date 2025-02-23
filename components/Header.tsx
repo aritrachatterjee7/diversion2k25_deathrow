@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import SidebarReporter from "@/components/SidebarReporter";
-import SidebarCollector from "@/components/SidebarCollector";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -20,7 +18,6 @@ import { createUser, getUnreadNotifications, markNotificationAsRead, getUserByEm
 import RoleSelectionModal from "@/components/ui/RoleSelectionModal";
 import SecretKeyModal from "@/components/ui/SecretKeyModal";
 
-// Types
 type Notification = {
   id: number;
   type: string;
@@ -40,10 +37,9 @@ interface UserInfo {
   role?: 'reporter' | 'collector';
 }
 
-// Chain Configuration
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: "0x1",  // Ethereum Mainnet
+  chainId: "0x1",
   rpcTarget: "https://rpc.ankr.com/eth",
   displayName: "Ethereum Mainnet",
   blockExplorerUrl: "https://etherscan.io",
@@ -58,7 +54,7 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState(totalEarnings || 0);
   const [retryCount, setRetryCount] = useState(0);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showSecretKeyModal, setShowSecretKeyModal] = useState(false);
@@ -111,11 +107,9 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
 
         if (retryCount < maxRetries) {
           const nextRetry = retryCount + 1;
-          console.log(`Retry attempt ${nextRetry} of ${maxRetries} in 2 seconds...`);
           setRetryCount(nextRetry);
           setTimeout(initWeb3Auth, 2000);
         } else {
-          console.error("Failed to initialize Web3Auth after multiple attempts");
           setLoading(false);
         }
       }
@@ -123,6 +117,13 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
 
     initWeb3Auth();
   }, [retryCount]);
+
+  useEffect(() => {
+    setBalance(prevBalance => {
+      const newBalance = Math.max(prevBalance || 0, totalEarnings || 0);
+      return isNaN(newBalance) ? 0 : newBalance;
+    });
+  }, [totalEarnings]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -153,7 +154,10 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
           const user = await getUserByEmail(userInfo.email);
           if (user) {
             const userBalance = await getUserBalance(user.id);
-            setBalance(userBalance);
+            setBalance(prevBalance => {
+              const newBalance = Math.max(prevBalance || 0, userBalance || 0, totalEarnings || 0);
+              return isNaN(newBalance) ? 0 : newBalance;
+            });
           }
         }
       } catch (error) {
@@ -162,7 +166,10 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
     };
 
     const handleBalanceUpdate = (event: BalanceUpdateEvent) => {
-      setBalance(event.detail);
+      setBalance(prevBalance => {
+        const newBalance = Math.max(prevBalance || 0, event.detail || 0, totalEarnings || 0);
+        return isNaN(newBalance) ? 0 : newBalance;
+      });
     };
 
     if (userInfo?.email) {
@@ -172,7 +179,7 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
         window.removeEventListener('balanceUpdated', handleBalanceUpdate as EventListener);
       };
     }
-  }, [userInfo]);
+  }, [userInfo, totalEarnings]);
 
   const handleRoleSelection = async (role: 'reporter' | 'collector') => {
     localStorage.setItem('userRole', role);
@@ -324,7 +331,7 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
             <div className="mr-2 md:mr-4 flex items-center bg-gray-100 rounded-full px-2 md:px-3 py-1">
               <Coins className="h-4 w-4 md:h-5 md:w-5 mr-1 text-green-500" />
               <span className="font-semibold text-sm md:text-base text-gray-800">
-                {balance.toFixed(2)}
+                {(balance || 0).toFixed(2)}
               </span>
             </div>
 
@@ -363,10 +370,6 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
         </div>
       </header>
 
-      {/* Conditional rendering of sidebar components */}
-      {loggedIn && userInfo?.role === 'reporter' && <SidebarReporter open={isSidebarOpen} />}
-      {loggedIn && userInfo?.role === 'collector' && <SidebarCollector open={isSidebarOpen} />}
-
       <RoleSelectionModal
         showRoleModal={showRoleModal}
         setShowRoleModal={setShowRoleModal}
@@ -379,5 +382,5 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
         onSubmit={handleSecretKeySubmit}
       />
     </>
-  );
+  )
 }
