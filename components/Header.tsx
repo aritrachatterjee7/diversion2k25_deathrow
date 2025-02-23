@@ -165,20 +165,14 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
       }
     };
 
-    const handleBalanceUpdate = (event: BalanceUpdateEvent) => {
-      setBalance(prevBalance => {
-        const newBalance = Math.max(prevBalance || 0, event.detail || 0, totalEarnings || 0);
-        return isNaN(newBalance) ? 0 : newBalance;
-      });
-    };
+    // Fetch balance immediately when the component mounts or userInfo changes
+    fetchUserBalance();
 
-    if (userInfo?.email) {
-      fetchUserBalance();
-      window.addEventListener('balanceUpdated', handleBalanceUpdate as EventListener);
-      return () => {
-        window.removeEventListener('balanceUpdated', handleBalanceUpdate as EventListener);
-      };
-    }
+    // Set up polling to fetch balance every 10 seconds
+    const balanceInterval = setInterval(fetchUserBalance, 10000);
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(balanceInterval);
   }, [userInfo, totalEarnings]);
 
   const handleRoleSelection = async (role: 'reporter' | 'collector') => {
@@ -291,7 +285,7 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
             </div>
           )}
 
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4 md:space-x-6">
             {isMobile && (
               <Button variant="ghost" size="icon" className="mr-2">
                 <Search className="h-5 w-5" />
@@ -300,8 +294,8 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="mr-2 relative">
-                  <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-6 w-6 md:h-7 md:w-7" />
                   {notifications.length > 0 && (
                     <Badge className="absolute -top-1 -right-1 px-1 min-w-[1.2rem] h-5">
                       {notifications.length}
@@ -328,27 +322,20 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="mr-2 md:mr-4 flex items-center bg-gray-100 rounded-full px-2 md:px-3 py-1">
-              <Coins className="h-4 w-4 md:h-5 md:w-5 mr-1 text-green-500" />
-              <span className="font-semibold text-sm md:text-base text-gray-800">
-                {(balance || 0).toFixed(2)}
-              </span>
-            </div>
-
             {!loggedIn ? (
               <Button
                 onClick={() => setShowRoleModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white text-sm md:text-base"
+                className="bg-green-600 hover:bg-green-700 text-white text-sm md:text-base px-6 py-3 md:px-8 md:py-4 ml-4 md:ml-6"
               >
                 Login
-                <LogIn className="ml-1 md:ml-2 h-4 w-4 md:h-5 md:w-5" />
+                <LogIn className="ml-2 h-5 w-5 md:h-6 md:w-6" />
               </Button>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="flex items-center">
-                    <User className="h-5 w-5 mr-1" />
-                    <ChevronDown className="h-4 w-4" />
+                    <User className="h-6 w-6 md:h-7 md:w-7 mr-1" />
+                    <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -382,5 +369,5 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
         onSubmit={handleSecretKeySubmit}
       />
     </>
-  )
+  );
 }
