@@ -3,7 +3,12 @@ import { useState, useEffect } from 'react'
 import { MapPin, Upload, CheckCircle, Loader } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { createUser, getUserByEmail, createReport, getRecentReports } from '@/utils/db/actions'
+import {
+  createUser,
+  getUserByEmail,
+  createReport,
+  getRecentReports,
+} from '@/utils/db/actions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 
@@ -19,6 +24,7 @@ export default function ReportPage() {
     wasteType: string
     amount: string
     createdAt: string
+    status: 'pending' | 'in_progress' | 'completed'
   }>>([])
 
   const [newReport, setNewReport] = useState({
@@ -168,7 +174,8 @@ export default function ReportPage() {
         location: report.location,
         wasteType: report.wasteType,
         amount: report.amount,
-        createdAt: report.createdAt.toISOString().split('T')[0]
+        createdAt: report.createdAt.toISOString().split('T')[0],
+        status: report.status as 'pending' | 'in_progress' | 'completed', // Ensure status is correctly typed
       }
 
       setReports([formattedReport, ...reports])
@@ -178,7 +185,7 @@ export default function ReportPage() {
       setVerificationStatus('idle')
       setVerificationResult(null)
 
-      toast.success('Report submitted successfully! You\'ve earned points for reporting waste.')
+      toast.success('Report submitted successfully! A collector will be assigned soon.')
     } catch (error) {
       console.error('Error submitting report:', error)
       toast.error('Failed to submit report. Please try again.')
@@ -200,7 +207,8 @@ export default function ReportPage() {
         const recentReports = await getRecentReports()
         const formattedReports = recentReports.map(report => ({
           ...report,
-          createdAt: report.createdAt.toISOString().split('T')[0]
+          createdAt: report.createdAt.toISOString().split('T')[0],
+          status: report.status as 'pending' | 'in_progress' | 'completed', // Ensure status is correctly typed
         }))
         setReports(formattedReports)
       } else {
@@ -219,7 +227,7 @@ export default function ReportPage() {
       </header>
 
       <main className="flex-grow p-8 w-full max-w-4xl">
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg mb-12 form-container">
+       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg mb-12 form-container">
           <div className="mb-8">
             <label htmlFor="waste-image" className="block text-lg font-medium text-gray-700 mb-2">
               Upload Waste Image
@@ -367,6 +375,8 @@ export default function ReportPage() {
           </Button>
         </form>
 
+
+
         <h2 className="text-3xl font-semibold mb-6 text-gray-800">Recent Reports</h2>
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="max-h-96 overflow-y-auto">
@@ -377,6 +387,7 @@ export default function ReportPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -389,6 +400,7 @@ export default function ReportPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.wasteType}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.amount}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.createdAt}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -396,117 +408,6 @@ export default function ReportPage() {
           </div>
         </div>
       </main>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% {
-            transform: translateY(0);
-          }
-          40% {
-            transform: translateY(-30px);
-          }
-          60% {
-            transform: translateY(-15px);
-          }
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes shake {
-          0% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          50% { transform: translateX(5px); }
-          75% { transform: translateX(-5px); }
-          100% { transform: translateX(0); }
-        }
-
-        .animated-header {
-          animation: fadeIn 2s ease-in-out;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        button {
-          transition: transform 0.3s, background 0.3s, box-shadow 0.3s, text-shadow 0.3s, font-size 0.3s;
-        }
-
-        button:hover {
-          transform: scale(1.05);
-        }
-
-        button svg {
-          margin-right: 8px;
-          vertical-align: middle;
-        }
-
-        .form-container {
-          background: white;
-          padding: 30px;
-          border-radius: 15px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          transition: box-shadow 0.3s;
-        }
-
-        .form-container:hover {
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        input, select {
-          border: 1px solid #ccc;
-          border-radius: 10px;
-          padding: 10px;
-          font-size: 14px;
-          transition: border-color 0.3s;
-        }
-
-        input:focus, select:focus {
-          border-color: #4CAF50;
-          outline: none;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        th, td {
-          padding: 12px;
-          text-align: left;
-          border-bottom: 1px solid #ddd;
-        }
-
-        th {
-          background-color: #f2f2f2;
-          color: #333;
-        }
-
-        tr:hover {
-          background-color: #f9f9f9;
-        }
-
-        .slide-in {
-          animation: slideIn 0.5s ease-in-out;
-        }
-
-        .shake {
-          animation: shake 0.5s;
-        }
-      `}</style>
     </div>
   )
 }

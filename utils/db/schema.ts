@@ -1,4 +1,8 @@
-import { integer, varchar, pgTable, serial, text, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { integer, varchar, pgTable, serial, text, timestamp, jsonb, boolean, pgEnum } from "drizzle-orm/pg-core";
+
+// Define enums for status values
+export const reportStatusEnum = pgEnum("report_status", ['pending', 'in_progress', 'completed']);
+export const collectionStatusEnum = pgEnum("collection_status", ['collected', 'verified']);
 
 // Users table
 export const Users = pgTable("users", {
@@ -17,9 +21,12 @@ export const Reports = pgTable("reports", {
   amount: varchar("amount", { length: 255 }).notNull(),
   imageUrl: text("image_url"),
   verificationResult: jsonb("verification_result"),
-  status: varchar("status", { length: 255 }).notNull().default("pending"),
+  status: reportStatusEnum("status").notNull().default("pending"), // Use enum here
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  assignedAt: timestamp("assigned_at"), // New field: when a collector is assigned
+  completedAt: timestamp("completed_at"), // New field: when collection is completed
   collectorId: integer("collector_id").references(() => Users.id),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(), // New field: for tracking status changes
 });
 
 // Rewards table
@@ -42,7 +49,8 @@ export const CollectedWastes = pgTable("collected_wastes", {
   reportId: integer("report_id").references(() => Reports.id).notNull(),
   collectorId: integer("collector_id").references(() => Users.id).notNull(),
   collectionDate: timestamp("collection_date").notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("collected"),
+  status: collectionStatusEnum("status").notNull().default("collected"), // Use enum here
+  verificationResult: jsonb("verification_result"), // New field: to store verification details
 });
 
 // Notifications table
@@ -55,11 +63,11 @@ export const Notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// New Transactions table
+// Transactions table
 export const Transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => Users.id).notNull(),
-  type: varchar("type", { length: 20 }).notNull(), // 'earned' or 'redeemed'
+  type: varchar("type", { length: 20 }).notNull(), // 'earned_report', 'earned_collect', or 'redeemed'
   amount: integer("amount").notNull(),
   description: text("description").notNull(),
   date: timestamp("date").defaultNow().notNull(),
