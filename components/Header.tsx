@@ -182,21 +182,41 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
     if (role === 'collector') {
       setShowSecretKeyModal(true);
     } else {
-      login();
+      await login();
     }
   };
 
   const handleSecretKeySubmit = async (secretKey: string) => {
-    const mockUser: UserInfo = {
-      email: `collector-${Date.now()}@waste-management.com`,
-      name: 'Waste Collector',
-      role: 'collector'
-    };
-    setUserInfo(mockUser);
-    setLoggedIn(true);
-    localStorage.setItem('userEmail', mockUser.email);
-    await createUser(mockUser.email, mockUser.name);
-    setShowSecretKeyModal(false);
+    try {
+      // Check if the secret key is "123456"
+      if (secretKey !== "123456") {
+        alert("Invalid secret key. Please try again.");
+        return;
+      }
+
+      // If the secret key is valid, proceed with Web3Auth login
+      if (!web3auth) {
+        throw new Error("web3auth not initialized");
+      }
+
+      const web3authProvider = await web3auth.connect();
+      setProvider(web3authProvider);
+      setLoggedIn(true);
+
+      const user = await web3auth.getUserInfo();
+      const role = localStorage.getItem('userRole') as 'reporter' | 'collector';
+      setUserInfo({ ...user, role });
+
+      if (user.email) {
+        localStorage.setItem('userEmail', user.email);
+        await createUser(user.email, user.name || 'Anonymous User');
+      }
+
+      setShowSecretKeyModal(false);
+    } catch (error) {
+      console.error("Error during secret key submission or Web3Auth login:", error);
+      alert("Error during login. Please try again.");
+    }
   };
 
   const login = async () => {
