@@ -12,22 +12,42 @@ import {
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 
-const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
+const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY as string
+
+interface User {
+  id: number
+  email: string
+  name: string
+}
+
+interface Report {
+  id: number
+  location: string
+  wasteType: string
+  amount: string
+  createdAt: string
+  status: 'pending' | 'in_progress' | 'completed'
+}
+
+interface VerificationResult {
+  wasteType: string
+  quantity: string
+  confidence: number
+}
+
+interface NewReport {
+  location: string
+  type: string
+  amount: string
+}
 
 export default function ReportPage() {
-  const [user, setUser] = useState<{ id: number; email: string; name: string } | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
 
-  const [reports, setReports] = useState<Array<{
-    id: number
-    location: string
-    wasteType: string
-    amount: string
-    createdAt: string
-    status: 'pending' | 'in_progress' | 'completed'
-  }>>([])
+  const [reports, setReports] = useState<Report[]>([])
 
-  const [newReport, setNewReport] = useState({
+  const [newReport, setNewReport] = useState<NewReport>({
     location: '',
     type: '',
     amount: '',
@@ -36,11 +56,7 @@ export default function ReportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failure' | 'no_waste'>('idle')
-  const [verificationResult, setVerificationResult] = useState<{
-    wasteType: string
-    quantity: string
-    confidence: number
-  } | null>(null)
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -86,7 +102,7 @@ export default function ReportPage() {
     setVerificationStatus('verifying')
 
     try {
-      const genAI = new GoogleGenerativeAI(geminiApiKey!)
+      const genAI = new GoogleGenerativeAI(geminiApiKey)
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
       const base64Data = await readFileAsBase64(file)
@@ -117,7 +133,7 @@ export default function ReportPage() {
 
       try {
         const jsonStr = extractJsonFromText(text)
-        const parsedResult = JSON.parse(jsonStr)
+        const parsedResult = JSON.parse(jsonStr) as VerificationResult
 
         if (parsedResult.wasteType === "none") {
           setVerificationStatus('no_waste')
@@ -167,15 +183,19 @@ export default function ReportPage() {
         newReport.amount,
         preview || undefined,
         verificationResult ? JSON.stringify(verificationResult) : undefined
-      ) as any
+      )
 
-      const formattedReport = {
+      if (!report) {
+        throw new Error('Failed to create report')
+      }
+
+      const formattedReport: Report = {
         id: report.id,
         location: report.location,
         wasteType: report.wasteType,
         amount: report.amount,
-        createdAt: report.createdAt.toISOString().split('T')[0],
-        status: report.status as 'pending' | 'in_progress' | 'completed', // Ensure status is correctly typed
+        createdAt: new Date(report.createdAt).toISOString().split('T')[0],
+        status: report.status
       }
 
       setReports([formattedReport, ...reports])
@@ -205,12 +225,17 @@ export default function ReportPage() {
         setUser(user)
 
         const recentReports = await getRecentReports()
-        const formattedReports = recentReports.map(report => ({
-          ...report,
-          createdAt: report.createdAt.toISOString().split('T')[0],
-          status: report.status as 'pending' | 'in_progress' | 'completed', // Ensure status is correctly typed
-        }))
-        setReports(formattedReports)
+        if (recentReports) {
+          const formattedReports = recentReports.map(report => ({
+            id: report.id,
+            location: report.location,
+            wasteType: report.wasteType,
+            amount: report.amount,
+            createdAt: new Date(report.createdAt).toISOString().split('T')[0],
+            status: report.status
+          }))
+          setReports(formattedReports)
+        }
       } else {
         router.push('/login')
       }
@@ -227,7 +252,7 @@ export default function ReportPage() {
       </header>
 
       <main className="flex-grow p-8 w-full max-w-4xl">
-       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg mb-12 form-container">
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg mb-12 form-container">
           <div className="mb-8">
             <label htmlFor="waste-image" className="block text-lg font-medium text-gray-700 mb-2">
               Upload Waste Image
@@ -374,8 +399,6 @@ export default function ReportPage() {
             )}
           </Button>
         </form>
-
-
 
         <h2 className="text-3xl font-semibold mb-6 text-gray-800">Recent Reports</h2>
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
