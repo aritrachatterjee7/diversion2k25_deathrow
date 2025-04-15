@@ -1,4 +1,4 @@
-"use client"; // Mark this component as a Client Component
+"use client";
 
 import { useState, useEffect } from 'react';
 import { ArrowRight, Earth, Recycle, Coins, MapPin } from 'lucide-react';
@@ -65,7 +65,7 @@ export default function Home() {
           co2Offset: Math.round(co2Offset * 10) / 10
         });
       } catch (error) {
-        console.error("Error fetching impact data:", error);
+        console.error("Error fetching impact data:");
         setImpactData({
           wasteCollected: 0,
           reportsSubmitted: 0,
@@ -113,16 +113,16 @@ export default function Home() {
           {!loggedIn ? (
             <Button
               onClick={() => setLoggedIn(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-12 py-6 rounded-full text-xl transition-all duration-300 ease-in-out transform hover:scale-105 hover:text-2xl"
+              className="bg-green-600 hover:bg-green-700 text-white px-12 py-6 rounded-full text-xl transition-all duration-300 ease-in-out transform hover:scale-105"
               style={{ minWidth: '280px' }}
             >
               Join the Movement
               <ArrowRight className="ml-2" />
             </Button>
           ) : (
-            <Link href="/report">
+            <Link href="/report" passHref>
               <Button
-                className="bg-green-600 hover:bg-green-700 text-white px-12 py-6 rounded-full text-xl transition-all duration-300 ease-in-out transform hover:scale-105 hover:text-2xl"
+                className="bg-green-600 hover:bg-green-700 text-white px-12 py-6 rounded-full text-xl transition-all duration-300 ease-in-out transform hover:scale-105"
                 style={{ minWidth: '280px' }}
               >
                 Start Reporting

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Menu, Coins, Search, Bell, User, ChevronDown, LogIn, Earth } from "lucide-react";
+import { Menu, Search, Bell, User, ChevronDown, LogIn, Earth } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
