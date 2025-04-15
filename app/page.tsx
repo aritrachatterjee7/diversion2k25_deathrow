@@ -1,12 +1,12 @@
 "use client"; // Mark this component as a Client Component
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Earth, Recycle, Users, Coins, MapPin, ChevronRight } from 'lucide-react';
+import { ArrowRight, Earth, Recycle, Coins, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Poppins } from 'next/font/google';
 import Link from 'next/link';
 import { getRecentReports, getAllRewards, getWasteCollectionTasks } from '@/utils/db/actions';
-import { motion } from 'framer-motion'; // Import framer-motion
+import { motion } from 'framer-motion'; 
 
 const poppins = Poppins({
   weight: ['300', '400', '600'],
@@ -186,7 +186,7 @@ export default function Home() {
         >
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-4">Community Impact</h2>
-            <p className="text-gray-600">Together, we're making a difference</p>
+            <p className="text-gray-600">Together, we are making a difference</p>
           </div>
           <div className="flex flex-wrap justify-around gap-4">
             <div className="text-center p-4">

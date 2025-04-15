@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Trash2, MapPin, CheckCircle, Clock, ArrowRight, Camera, Upload, Loader, Calendar, Weight, Search } from 'lucide-react'
+import { Trash2, MapPin, CheckCircle, Clock, Upload, Loader, Calendar, Weight, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'react-hot-toast'
 import { getWasteCollectionTasks, updateTaskStatus, saveReward, saveCollectedWaste, getUserByEmail } from '@/utils/db/actions'
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import Image from 'next/image' // Added to replace img tags
 
-// Make sure to set your Gemini API key in your environment variables
 const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
 
 type CollectionTask = {
@@ -25,16 +25,23 @@ const ITEMS_PER_PAGE = 5
 export default function CollectPage() {
   const [tasks, setTasks] = useState<CollectionTask[]>([])
   const [loading, setLoading] = useState(true)
-  const [hoveredWasteType, setHoveredWasteType] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [user, setUser] = useState<{ id: number; email: string; name: string } | null>(null)
+  const [selectedTask, setSelectedTask] = useState<CollectionTask | null>(null)
+  const [verificationImage, setVerificationImage] = useState<string | null>(null)
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failure'>('idle')
+  const [verificationResult, setVerificationResult] = useState<{
+    wasteTypeMatch: boolean;
+    quantityMatch: boolean;
+    confidence: number;
+  } | null>(null)
+  const [_reward, _setReward] = useState<number | null>(null) // Marked as unused with _
 
   useEffect(() => {
     const fetchUserAndTasks = async () => {
       setLoading(true)
       try {
-        // Fetch user
         const userEmail = localStorage.getItem('userEmail')
         if (userEmail) {
           const fetchedUser = await getUserByEmail(userEmail)
@@ -42,14 +49,11 @@ export default function CollectPage() {
             setUser(fetchedUser)
           } else {
             toast.error('User not found. Please log in again.')
-            // Redirect to login page or handle this case appropriately
           }
         } else {
           toast.error('User not logged in. Please log in.')
-          // Redirect to login page or handle this case appropriately
         }
 
-        // Fetch tasks
         const fetchedTasks = await getWasteCollectionTasks()
         setTasks(fetchedTasks as CollectionTask[])
       } catch (error) {
@@ -62,16 +66,6 @@ export default function CollectPage() {
 
     fetchUserAndTasks()
   }, [])
-
-  const [selectedTask, setSelectedTask] = useState<CollectionTask | null>(null)
-  const [verificationImage, setVerificationImage] = useState<string | null>(null)
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failure'>('idle')
-  const [verificationResult, setVerificationResult] = useState<{
-    wasteTypeMatch: boolean;
-    quantityMatch: boolean;
-    confidence: number;
-  } | null>(null)
-  const [reward, setReward] = useState<number | null>(null)
 
   const handleStatusChange = async (taskId: number, newStatus: CollectionTask['status']) => {
     if (!user) {
@@ -128,7 +122,7 @@ export default function CollectPage() {
         {
           inlineData: {
             data: base64Data,
-            mimeType: 'image/jpeg', // Adjust this if you know the exact type
+            mimeType: 'image/jpeg',
           },
         },
       ]
@@ -150,11 +144,10 @@ export default function CollectPage() {
       const text = response.text()
 
       try {
-        // Clean the response text of any markdown code blocks
         const cleanedText = text.replace(/```json\s*|\s*```/g, '').trim()
         const parsedResult = JSON.parse(cleanedText)
 
-        console.log('Verification Result:', parsedResult) // Debugging information
+        console.log('Verification Result:', parsedResult)
 
         setVerificationResult({
           wasteTypeMatch: parsedResult.wasteTypeMatch,
@@ -164,18 +157,12 @@ export default function CollectPage() {
         setVerificationStatus('success')
 
         if (parsedResult.wasteTypeMatch && parsedResult.confidence > 0.7) {
-          // Adjust the confidence threshold for quantity match
           if (parsedResult.quantityMatch || parsedResult.confidence > 0.6) {
             await handleStatusChange(selectedTask.id, 'verified')
-            const earnedReward = Math.floor(Math.random() * 50) + 10 // Random reward between 10 and 59
-
-            // Save the reward
+            const earnedReward = Math.floor(Math.random() * 50) + 10
             await saveReward(user.id, earnedReward)
-
-            // Save the collected waste
             await saveCollectedWaste(selectedTask.id, user.id, parsedResult)
-
-            setReward(earnedReward)
+            _setReward(earnedReward)
             toast.success(`Verification successful! You earned ${earnedReward} tokens!`, {
               duration: 5000,
               position: 'top-center',
@@ -277,18 +264,16 @@ export default function CollectPage() {
           setSelectedTask={setSelectedTask}
         />
       )}
-
-      {/* Add a conditional render to show user info or login prompt */}
-      {/* {user ? (
-        <p className="text-sm text-gray-600 mb-4">Logged in as: {user.name}</p>
-      ) : (
-        <p className="text-sm text-red-600 mb-4">Please log in to collect waste and earn rewards.</p>
-      )} */}
     </div>
   )
 }
 
-const TaskList = ({ tasks, onStatusChange, onSelectTask, user }: { tasks: CollectionTask[], onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, onSelectTask: (task: CollectionTask) => void, user: { id: number; email: string; name: string } | null }) => (
+const TaskList = ({ tasks, onStatusChange, onSelectTask, user }: { 
+  tasks: CollectionTask[], 
+  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, 
+  onSelectTask: (task: CollectionTask) => void, 
+  user: { id: number; email: string; name: string } | null 
+}) => (
   <div className="space-y-4">
     {tasks.map(task => (
       <TaskItem key={task.id} task={task} onStatusChange={onStatusChange} onSelectTask={onSelectTask} user={user} />
@@ -296,7 +281,12 @@ const TaskList = ({ tasks, onStatusChange, onSelectTask, user }: { tasks: Collec
   </div>
 )
 
-const TaskItem = ({ task, onStatusChange, onSelectTask, user }: { task: CollectionTask, onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, onSelectTask: (task: CollectionTask) => void, user: { id: number; email: string; name: string } | null }) => {
+const TaskItem = ({ task, onStatusChange, onSelectTask, user }: { 
+  task: CollectionTask, 
+  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, 
+  onSelectTask: (task: CollectionTask) => void, 
+  user: { id: number; email: string; name: string } | null 
+}) => {
   const [hoveredWasteType, setHoveredWasteType] = useState<string | null>(null)
 
   return (
@@ -355,7 +345,23 @@ const TaskItem = ({ task, onStatusChange, onSelectTask, user }: { task: Collecti
   )
 }
 
-const VerificationModal = ({ selectedTask, verificationImage, verificationStatus, verificationResult, handleImageUpload, handleVerify, setSelectedTask }: { selectedTask: CollectionTask | null, verificationImage: string | null, verificationStatus: 'idle' | 'verifying' | 'success' | 'failure', verificationResult: { wasteTypeMatch: boolean; quantityMatch: boolean; confidence: number } | null, handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void, handleVerify: () => Promise<void>, setSelectedTask: (task: CollectionTask | null) => void }) => (
+const VerificationModal = ({ 
+  selectedTask, 
+  verificationImage, 
+  verificationStatus, 
+  verificationResult, 
+  handleImageUpload, 
+  handleVerify, 
+  setSelectedTask 
+}: { 
+  selectedTask: CollectionTask | null, 
+  verificationImage: string | null, 
+  verificationStatus: 'idle' | 'verifying' | 'success' | 'failure', 
+  verificationResult: { wasteTypeMatch: boolean; quantityMatch: boolean; confidence: number } | null, 
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void, 
+  handleVerify: () => Promise<void>, 
+  setSelectedTask: (task: CollectionTask | null) => void 
+}) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <h3 className="text-xl font-semibold mb-4">Verify Collection</h3>
@@ -381,7 +387,14 @@ const VerificationModal = ({ selectedTask, verificationImage, verificationStatus
         </div>
       </div>
       {verificationImage && (
-        <img src={verificationImage} alt="Verification" className="mb-4 rounded-md w-full" />
+        <div className="relative w-full h-64 mb-4">
+          <Image 
+            src={verificationImage} 
+            alt="Verification" 
+            fill
+            className="rounded-md object-contain"
+          />
+        </div>
       )}
       <Button
         onClick={handleVerify}
@@ -429,4 +442,3 @@ function StatusBadge({ status }: { status: CollectionTask['status'] }) {
     </span>
   )
 }
- 
