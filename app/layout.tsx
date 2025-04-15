@@ -9,6 +9,14 @@ import { getAvailableRewards, getUserByEmail } from "@/utils/db/actions";
 
 const inter = Inter({ subsets: ["latin"] });
 
+interface Reward {
+  id: number;
+  name: string;
+  cost: number;
+  description: string | null;
+  collectionInfo: string;
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -28,9 +36,12 @@ export default function RootLayout({
           console.log("user from layout", user);
 
           if (user) {
-            const availableRewards = (await getAvailableRewards(user.id)) as any;
-            console.log("availableRewards from layout", availableRewards);
-            setTotalEarnings(availableRewards);
+            const rewards = await getAvailableRewards(user.id) as Reward[];
+            console.log("availableRewards from layout", rewards);
+            
+            // Calculate total by summing all reward costs
+            const total = rewards.reduce((sum, reward) => sum + reward.cost, 0);
+            setTotalEarnings(total);
           }
         }
       } catch (error) {
