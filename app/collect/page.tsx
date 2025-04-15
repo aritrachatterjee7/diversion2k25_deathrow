@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'react-hot-toast'
 import { getWasteCollectionTasks, updateTaskStatus, saveReward, saveCollectedWaste, getUserByEmail } from '@/utils/db/actions'
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import Image from 'next/image' // Added to replace img tags
+import Image from 'next/image'
 
 const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
 
@@ -20,6 +20,18 @@ type CollectionTask = {
   collectorId: number | null
 }
 
+type User = {
+  id: number
+  email: string
+  name: string
+} | null
+
+type VerificationResult = {
+  wasteTypeMatch: boolean
+  quantityMatch: boolean
+  confidence: number
+} | null
+
 const ITEMS_PER_PAGE = 5
 
 export default function CollectPage() {
@@ -27,16 +39,12 @@ export default function CollectPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [user, setUser] = useState<{ id: number; email: string; name: string } | null>(null)
+  const [user, setUser] = useState<User>(null)
   const [selectedTask, setSelectedTask] = useState<CollectionTask | null>(null)
   const [verificationImage, setVerificationImage] = useState<string | null>(null)
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failure'>('idle')
-  const [verificationResult, setVerificationResult] = useState<{
-    wasteTypeMatch: boolean;
-    quantityMatch: boolean;
-    confidence: number;
-  } | null>(null)
-  const [_reward, _setReward] = useState<number | null>(null) // Marked as unused with _
+  const [verificationResult, setVerificationResult] = useState<VerificationResult>(null)
+  const [_reward, _setReward] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchUserAndTasks = async () => {
@@ -46,7 +54,7 @@ export default function CollectPage() {
         if (userEmail) {
           const fetchedUser = await getUserByEmail(userEmail)
           if (fetchedUser) {
-            setUser(fetchedUser)
+            setUser(fetchedUser as User)
           } else {
             toast.error('User not found. Please log in again.')
           }
@@ -268,25 +276,35 @@ export default function CollectPage() {
   )
 }
 
-const TaskList = ({ tasks, onStatusChange, onSelectTask, user }: { 
-  tasks: CollectionTask[], 
-  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, 
-  onSelectTask: (task: CollectionTask) => void, 
-  user: { id: number; email: string; name: string } | null 
-}) => (
+interface TaskListProps {
+  tasks: CollectionTask[]
+  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>
+  onSelectTask: (task: CollectionTask) => void
+  user: User
+}
+
+const TaskList = ({ tasks, onStatusChange, onSelectTask, user }: TaskListProps) => (
   <div className="space-y-4">
     {tasks.map(task => (
-      <TaskItem key={task.id} task={task} onStatusChange={onStatusChange} onSelectTask={onSelectTask} user={user} />
+      <TaskItem 
+        key={task.id} 
+        task={task} 
+        onStatusChange={onStatusChange} 
+        onSelectTask={onSelectTask} 
+        user={user} 
+      />
     ))}
   </div>
 )
 
-const TaskItem = ({ task, onStatusChange, onSelectTask, user }: { 
-  task: CollectionTask, 
-  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>, 
-  onSelectTask: (task: CollectionTask) => void, 
-  user: { id: number; email: string; name: string } | null 
-}) => {
+interface TaskItemProps {
+  task: CollectionTask
+  onStatusChange: (taskId: number, newStatus: CollectionTask['status']) => Promise<void>
+  onSelectTask: (task: CollectionTask) => void
+  user: User
+}
+
+const TaskItem = ({ task, onStatusChange, onSelectTask, user }: TaskItemProps) => {
   const [hoveredWasteType, setHoveredWasteType] = useState<string | null>(null)
 
   return (
@@ -345,6 +363,16 @@ const TaskItem = ({ task, onStatusChange, onSelectTask, user }: {
   )
 }
 
+interface VerificationModalProps {
+  selectedTask: CollectionTask | null
+  verificationImage: string | null
+  verificationStatus: 'idle' | 'verifying' | 'success' | 'failure'
+  verificationResult: VerificationResult
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+  handleVerify: () => Promise<void>
+  setSelectedTask: (task: CollectionTask | null) => void
+}
+
 const VerificationModal = ({ 
   selectedTask, 
   verificationImage, 
@@ -353,15 +381,7 @@ const VerificationModal = ({
   handleImageUpload, 
   handleVerify, 
   setSelectedTask 
-}: { 
-  selectedTask: CollectionTask | null, 
-  verificationImage: string | null, 
-  verificationStatus: 'idle' | 'verifying' | 'success' | 'failure', 
-  verificationResult: { wasteTypeMatch: boolean; quantityMatch: boolean; confidence: number } | null, 
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void, 
-  handleVerify: () => Promise<void>, 
-  setSelectedTask: (task: CollectionTask | null) => void 
-}) => (
+}: VerificationModalProps) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <h3 className="text-xl font-semibold mb-4">Verify Collection</h3>
@@ -425,7 +445,11 @@ const VerificationModal = ({
   </div>
 )
 
-function StatusBadge({ status }: { status: CollectionTask['status'] }) {
+interface StatusBadgeProps {
+  status: CollectionTask['status']
+}
+
+function StatusBadge({ status }: StatusBadgeProps) {
   const statusConfig = {
     pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     in_progress: { color: 'bg-blue-100 text-blue-800', icon: Trash2 },
