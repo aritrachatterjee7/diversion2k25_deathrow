@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Trash2, Leaf } from "lucide-react";
@@ -17,7 +17,6 @@ export default function RoleSelectionModal({
   handleRoleSelection 
 }: RoleSelectionModalProps) {
 
-  // Handles selection and closes modal
   const onSelectRole = (role: 'reporter' | 'collector') => {
     handleRoleSelection(role);
     setShowRoleModal(false);

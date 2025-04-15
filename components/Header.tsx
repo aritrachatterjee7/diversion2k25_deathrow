@@ -47,12 +47,12 @@ const chainConfig = {
 
 export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
-  const [provider, setProvider] = useState<IProvider | null>(null);
+  const [provider, setProvider] = useState<IProvider | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [loggedIn, setLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [balance, setBalance] = useState(totalEarnings || 0);
+  const [balance, setBalance] = useState(totalEarnings || 0); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [retryCount, setRetryCount] = useState(0);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showSecretKeyModal, setShowSecretKeyModal] = useState(false);
