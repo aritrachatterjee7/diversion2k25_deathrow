@@ -24,8 +24,6 @@ type Notification = {
   message: string;
 };
 
-type BalanceUpdateEvent = CustomEvent<number>;
-
 interface HeaderProps {
   onMenuClick: () => void;
   totalEarnings: number;
@@ -61,7 +59,8 @@ export default function Header({ onMenuClick, totalEarnings }: HeaderProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const maxRetries = 3;
 
-  const pathname = usePathname();
+  // Use pathname without assigning to variable since it's not used
+  usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
