@@ -18,7 +18,7 @@
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@react-google-maps/api": "^2.20.6",
-    "@web3auth/base": "^9.6.0",
+    "@web3auth/base": "^9.7.0",
     "@web3auth/ethereum-provider": "^9.6.0",
     "@web3auth/modal": "^9.6.0",
     "class-variance-authority": "^0.7.1",
