@@ -84,6 +84,12 @@
 5. **Access the Application:**
     Open [http://localhost:3000](http://localhost:3000)
 
+## 📈 Future Enhancements
+
+- **🔗 Blockchain Integration:** Transparent reward tracking
+- **📊 Advanced Analytics:** Waste management insights
+- **🌐 City-wide Network:** Expanded collection network
+- **🤝 Government Integration:** Partnership with cleanliness initiatives
 
 ## 👥 Team Members
 
